@@ -1,1 +1,460 @@
 # m
+
+
+print("Hello Ostad"+" --1402/04/01--  "+"Mouloude Velashjerdi Hastam")
+
+pip install jupyter or pip install notebook
+jupyter notebook
+
+
+pip install numpy
+conda install numpy
+>>> import numpy
+
+pip install scipy
+conda install pandas
+
+pip install -U scikit-learn
+pip install tensorflow
+
+>>> import numpy as np
+>>> X_train = np.array([
+... [0, 1, 1],
+... [0, 0, 1],
+... [0, 0, 0],
+... [1, 1, 0]])
+>>> Y_train = ['Y', 'N', 'Y', 'Y']
+>>> X_test = np.array([[1, 1, 0]])
+
+ef get_label_indices(labels):
+... """
+... Group samples based on their labels and return indices
+... @param labels: list of labels
+... @return: dict, {class1: [indices], class2: [indices]}
+... """
+... from collections import defaultdict
+... label_indices = defaultdict(list)
+... for index, label in enumerate(labels):
+... label_indices[label].append(index)
+... return label_indice
+
+
+bel_indices = get_label_indices(Y_train)
+>>> print('label_indices:\n', label_indices)
+label_indices
+defaultdict(<class 'list'>, {'Y': [0, 2, 3], 'N': [1]}
+
+
+>>> def get_prior(label_indices):
+... """
+... Compute prior based on training samples
+... @param label_indices: grouped sample indices by class
+... @return: dictionary, with class label as key, corresponding
+... prior as the value
+... """
+... prior = {label: len(indices) for label, indices in
+
+.. label_indices.items()}
+... total_count = sum(prior.values())
+... for label in prior:
+... prior[label] /= total_count
+... return pri
+
+> prior = get_prior(label_indices)
+>>> print('Prior:', prior)
+Prior: {'Y': 0.75, 'N': 0.25
+
+>>> def get_likelihood(features, label_indices, smoothing=0):
+... """
+... Compute likelihood based on training samples
+... @param features: matrix of features
+... @param label_indices: grouped sample indices by class
+... @param smoothing: integer, additive smoothing parameter
+... @return: dictionary, with class as key, corresponding
+... conditional probability P(feature|class) vector
+... as value
+... """
+... likelihood = {}
+... for label, indices in label_indices.items():
+... likelihood[label] = features[indices, :].sum(axis=0)
+... + smoothing
+... total_count = len(indices)
+... likelihood[label] = likelihood[label] /
+... (total_count + 2 * smoothing)
+... return likelihood
+
+
+>>> smoothing = 1
+>>> likelihood = get_likelihood(X_train, label_indices, smoothing)
+>>> print('Likelihood:\n', likelihood)
+Likelihood:
+{'Y': array([0.4, 0.6, 0.4]), 'N': array([0.33333333, 0.33333333,
+0.66666667])}
+
+> def get_posterior(X, prior, likelihood):
+... """
+... Compute posterior of testing samples, based on prior and
+... likelihood
+... @param X: testing samples
+... @param prior: dictionary, with class label as key,
+... corresponding prior as the value
+... @param likelihood: dictionary, with class label as key,
+... corresponding conditional probability
+... vector as value
+... @return: dictionary, with class label as key, corresponding
+... posterior as value
+... """
+... posteriors = []
+... for x in X:
+... # posterior is proportional to prior * likelihood
+... posterior = prior.copy()
+... for label, likelihood_label in likelihood.items():
+... for index, bool_value in enumerate(x):
+
+
+... posterior[label] *= likelihood_label[index] if
+... bool_value else (1 - likelihood_label[index])
+... # normalize so that all sums up to 1
+... sum_posterior = sum(posterior.values())
+... for label in posterior:
+... if posterior[label] == float('inf'):
+... posterior[label] = 1.0
+... else:
+... posterior[label] /= sum_posterior
+... posteriors.append(posterior.copy())
+... return posteriors
+
+>>> posterior = get_posterior(X_test, prior, likelihood)
+>>> print('Posterior:\n', posterior)
+Posterior:
+[{'Y': 0.9210360075805433, 'N': 0.0789639924194567
+
+>>> from sklearn.naive_bayes import BernoulliNB
+
+
+>>> clf = BernoulliNB(alpha=1.0, fit_prior=True)
+
+
+>>> clf.fit(X_train, Y_train)
+
+
+edict_proba(X_test)
+>>> print('[scikit-learn] Predicted probabilities:\n', pred_prob)
+[scikit-learn] Predicted probabilities:
+[[0.07896399 0.92103601]
+
+> pred = clf.predict(X_test)
+>>> print('[scikit-learn] Prediction:', pred)
+[scikit-learn] Prediction: ['Y']
+
+rt numpy as np
+>>> from collections import defaultdict
+>>> data_path = 'ml-1m/ratings.dat'
+>>> n_users = 6040
+>>> n_movies = 370
+
+f load_rating_data(data_path, n_users, n_movies):
+... """
+... Load rating data from file and also return the number of
+... ratings for each movie and movie_id index mapping
+... @param data_path: path of the rating data file
+... @param n_users: number of users
+... @param n_movies: number of movies that have ratings
+... @return: rating data in the numpy array of [user, movie];
+... movie_n_rating, {movie_id: number of ratings};
+... movie_id_mapping, {movie_id: column index in
+... rating data}
+... """
+... data = np.zeros([n_users, n_movies], dtype=np.float32)
+... movie_id_mapping = {}
+... movie_n_rating = defaultdict(int)
+... with open(data_path, 'r') as file:
+... for line in file.readlines()[1:]:
+... user_id, movie_id, rating, _ = line.split("::")
+... user_id = int(user_id) - 1
+... if movie_id not in movie_id_mapping:
+... movie_id_mapping[movie_id] =
+... len(movie_id_mapping)
+... rating = int(rating)
+... data[user_id, movie_id_mapping[movie_id]] = rating
+
+
+ting > 0:
+... movie_n_rating[movie_id] += 1
+... return data, movie_n_rating, movie_id_mapping
+
+n_rating, movie_id_mapping =
+... load_rating_data(data_path, n_users, n_movies)
+
+
+
+f display_distribution(data):
+... values, counts = np.unique(data, return_counts=True)
+... for value, count in zip(values, counts):
+... print(f'Number of rating {int(value)}: {count}')
+>>> display_distribution(data)
+Number of rating 0: 21384032
+Number of rating 1: 56174
+Number of rating 2: 107557
+Number of rating 3: 261197
+Number of rating 4: 348971
+Number of rating 5: 226309
+
+
+ie_id_most, n_rating_most = sorted(movie_n_rating.items(),
+... key=lambda d: d[1], reverse=True)[0]
+>>> print(f'Movie ID {movie_id_most} has {n_rating_most} ratings.')
+Movie ID 2858 has 3428 ratings
+
+
+
+aw = np.delete(data, movie_id_mapping[movie_id_most],
+... axis=1)
+>>> Y_raw = data[:, movie_id_mapping[movie_id_most]]
+
+
+
+
+> X = X_raw[Y_raw > 0]
+>>> Y = Y_raw[Y_raw > 0]
+>>> print('Shape of X:', X.shape)
+Shape of X: (3428, 3705)
+>>> print('Shape of Y:', Y.shape)
+Shape of Y: (3428,)
+
+
+
+play_distribution(Y)
+Number of rating 1: 83
+Number of rating 2: 134
+Number of rating 3: 358
+Number of rating 4: 890
+Number of rating 5: 1963
+
+
+mmend = 3
+>>> Y[Y <= recommend] = 0
+>>> Y[Y > recommend] = 1
+>>> n_pos = (Y == 1).sum()
+>>> n_neg = (Y == 0).sum()
+>>> print(f'{n_pos} positive samples and {n_neg} negative
+... samples.')
+2853 positive samples and 575 negative samples
+
+
+
+l_selection import train_test_split
+>>> X_train, X_test, Y_train, Y_test = train_test_split(X, Y,
+... test_size=0.2, random_state=42)
+
+
+> print(len(Y_train), len(Y_test))
+2742 686
+
+
+earn.naive_bayes import MultinomialNB
+>>> clf = MultinomialNB(alpha=1.0, fit_prior=True)
+>>> clf.fit(X_train, Y_train)
+
+
+
+
+
+iction_prob = clf.predict_proba(X_test)
+>>> print(prediction_prob[0:10])
+[[7.50487439e-23 1.00000000e+00]
+[1.01806208e-01 8.98193792e-01]
+[3.57740570e-10 1.00000000e+00]
+[1.00000000e+00 2.94095407e-16]
+[1.00000000e+00 2.49760836e-25]
+[7.62630220e-01 2.37369780e-01]
+[3.47479627e-05 9.99965252e-01]
+[2.66075292e-11 1.00000000e+00]
+[5.88493563e-10 9.99999999e-01]
+[9.71326867e-09 9.99999990e-01]]
+
+
+
+
+
+
+
+
+
+
+
+iction = clf.predict(X_test)
+>>> print(prediction[:10])
+[1. 1. 1. 0. 0. 0. 1. 1. 1. 1.]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+curacy = clf.score(X_test, Y_test)
+>>> print(f'The accuracy is: {accuracy*100:.1f}%')
+The accuracy is: 71.6%
+
+
+
+
+
+x
+>>> print(confusion_matrix(Y_test, prediction, labels=[0, 1]))
+[[ 60 47]
+[148 431]]
+
+
+
+
+
+
+om sklearn.metrics import precision_score, recall_score, f1_score
+>>> precision_score(Y_test, prediction, pos_label=1)
+0.9016736401673641
+>>> recall_score(Y_test, prediction, pos_label=1)
+0.7443868739205527
+>>> f1_score(Y_test, prediction, pos_label=1)
+0.815515610217597
+
+
+
+
+
+
+
+
+
+
+>>> f1_score(Y_test, prediction, pos_label=0)
+0.38095238095238093
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+> from sklearn.metrics import classification_report
+>>> report = classification_report(Y_test, prediction)
+>>> print(report)
+precision recall f1-score support
+0.0 0.29 0.56 0.38 107
+1.0 0.90 0.74 0.82 579
+micro avg 0.72 0.72 0.72 686
+macro avg 0.60 0.65 0.60 686
+weighted avg 0.81 0.72 0.75 686
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>> pos_prob = prediction_prob[:, 1]
+>>> thresholds = np.arange(0.0, 1.1, 0.05)
+>>> true_pos, false_pos = [0]*len(thresholds), [0]*len(thresholds)
+>>> for pred, y in zip(pos_prob, Y_test):
+... for i, threshold in enumerate(thresholds):
+... if pred >= threshold:
+... # if truth and prediction are both 1
+... if y == 1:
+... true_pos[i] += 1
+... # if truth is 0 while prediction is 1
+... else:
+... false_pos[i] += 1
+... else:
+... break
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>> n_pos_test = (Y_test == 1).sum()
+>>> n_neg_test = (Y_test == 0).sum()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>> true_pos_rate = [tp / n_pos_test for tp in true_pos]
+>>> false_pos_rate = [fp / n_neg_test for fp in false_pos]
+
+
+
+
+
+
+
+
+
+
+
+> import matplotlib.pyplot as plt
+>>> plt.figure()
+>>> lw = 2
+>>> plt.plot(false_pos_rate, true_pos_rate,
+... color='darkorange', lw=lw)
+>>> plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+>>> plt.xlim([0.0, 1.0])
+>>> plt.ylim([0.0, 1.05])
+>>> plt.xlabel('False Positive Rate')
+>>> plt.ylabel('True Positive Rate')
+>>> plt.title('Receiver Operating Characteristic')
+>>> plt.legend(loc="lower right")
+>>> plt.show()
+
